@@ -1,0 +1,19 @@
+
+# Build output
+build/
+main.js
+
+# Dependencies
+node_modules/
+
+# Obsidian plugin data (contains API key)
+data.json
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Claude Code
+CLAUDE.md

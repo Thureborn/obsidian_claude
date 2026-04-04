@@ -1,0 +1,9 @@
+{
+  "id": "claude-dnd-chat",
+  "name": "Claude DnD Chat",
+  "version": "1.0.0",
+  "minAppVersion": "1.4.0",
+  "description": "Chat with Claude inside Obsidian with DnD-specific modes and vault context.",
+  "author": "You",
+  "isDesktopOnly": false
+}

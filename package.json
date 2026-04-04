@@ -1,0 +1,21 @@
+{
+  "name": "claude-dnd-chat",
+  "version": "1.0.0",
+  "description": "Claude DnD Chat plugin for Obsidian",
+  "main": "build/main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production && cp build/main.js main.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^16.11.6",
+    "@typescript-eslint/eslint-plugin": "5.29.0",
+    "@typescript-eslint/parser": "5.29.0",
+    "builtin-modules": "3.3.0",
+    "esbuild": "0.17.3",
+    "obsidian": "latest",
+    "tslib": "2.4.0",
+    "typescript": "5.3.3"
+  }
+}
