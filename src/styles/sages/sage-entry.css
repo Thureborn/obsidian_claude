@@ -1,0 +1,57 @@
+.claude-sage-entry {
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.claude-sage-entry:last-child { border-bottom: none; }
+
+.claude-sage-entry-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.claude-sage-entry-skipped .claude-sage-entry-head { opacity: 0.6; cursor: default; }
+
+.claude-sage-toggle {
+  background: none;
+  border: none;
+  font-size: 9px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  width: 12px;
+}
+
+.claude-sage-name {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.claude-sage-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  text-transform: capitalize;
+}
+
+.claude-sage-badge-pending  { background: var(--background-modifier-border); color: var(--text-muted); }
+.claude-sage-badge-running  { background: #f0a500; color: #000; }
+.claude-sage-badge-retrying { background: #c0392b; color: #fff; }
+.claude-sage-badge-done     { background: #2d7d46; color: #fff; }
+.claude-sage-badge-skipped  { background: var(--background-secondary-alt); color: var(--text-muted); }
+
+.claude-sage-entry-body {
+  padding: 8px 12px 10px 30px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-normal);
+  user-select: text;
+  -webkit-user-select: text;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.claude-sage-entry-body.hidden { display: none; }

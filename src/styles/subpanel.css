@@ -1,0 +1,10 @@
+.claude-subpanel-wrap {
+  display: none;
+  flex-shrink: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+}
+
+.claude-subpanel-wrap.visible { display: block; }

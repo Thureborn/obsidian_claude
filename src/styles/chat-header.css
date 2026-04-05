@@ -1,0 +1,61 @@
+.claude-chat-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.claude-chat-wrap.hidden { display: none; }
+
+.claude-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  flex-shrink: 0;
+}
+
+.claude-header-title {
+  font-weight: 600;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.claude-header-rename-input {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--background-primary);
+  border: 1px solid var(--interactive-accent);
+  border-radius: 3px;
+  color: var(--text-normal);
+  padding: 1px 5px;
+  min-width: 0;
+}
+
+.claude-mode-select {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+  border-radius: 4px;
+  padding: 3px 5px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+
+.claude-clear-btn {
+  background: none;
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-muted);
+  border-radius: 4px;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.claude-clear-btn:hover { color: var(--text-error); border-color: var(--text-error); }

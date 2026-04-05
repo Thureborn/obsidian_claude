@@ -1,11 +1,25 @@
 import esbuild from "esbuild";
 import process from "process";
 import builtins from "builtin-modules";
+import fs from "fs";
 
 const prod = process.argv[2] === "production";
 
+const copyPlugin = {
+  name: "copy-to-root",
+  setup(build) {
+    build.onEnd(() => {
+      fs.copyFileSync("build/main.js", "main.js");
+      fs.copyFileSync("build/styles.css", "styles.css");
+    });
+  },
+};
+
 const context = await esbuild.context({
-  entryPoints: ["src/main.ts"],
+  entryPoints: [
+    { in: "src/main.ts",          out: "main"   },
+    { in: "src/styles/index.css", out: "styles" },
+  ],
   bundle: true,
   external: [
     "obsidian",
@@ -28,8 +42,9 @@ const context = await esbuild.context({
   logLevel: "info",
   sourcemap: prod ? false : "inline",
   treeShaking: true,
-  outfile: "build/main.js",
+  outdir: "build",
   minify: prod,
+  plugins: [copyPlugin],
 });
 
 if (prod) {

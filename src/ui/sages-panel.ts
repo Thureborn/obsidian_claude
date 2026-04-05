@@ -1,5 +1,7 @@
-import { SagesRun, SageId, SageResult } from "./types";
-import { SAGE_LABELS, WAVE1_SAGES } from "./constants";
+import { SageId } from "../types/sages/SageId";
+import { SageResult } from "../types/sages/SageResult";
+import { SagesRun } from "../types/sages/SagesRun";
+import { SAGE_LABELS } from "../constants";
 
 export interface SagesViewCallbacks {
   onContinueToWave2: (correction: string) => void;
@@ -86,7 +88,7 @@ function renderSageEntry(container: HTMLElement, sage: SageResult): void {
   const toggle = head.createEl("button", { cls: "claude-sage-toggle", text: "▶" });
   head.createEl("span", { text: SAGE_LABELS[sage.sageId], cls: "claude-sage-name" });
 
-  const badge = head.createEl("span", {
+  head.createEl("span", {
     cls: `claude-sage-badge claude-sage-badge-${sage.status}`,
     text: sage.status === "running"
       ? "Running..."

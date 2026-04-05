@@ -1,0 +1,264 @@
+.claude-input-area {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px 30px 10px;
+  border-top: 1px solid var(--background-modifier-border);
+  flex-shrink: 0;
+}
+
+.claude-input-row {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+  position: relative;
+}
+
+.claude-bottom-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.claude-level-picker-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.claude-level-trigger {
+  background: none;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 2px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.claude-level-trigger:hover {
+  border-color: var(--interactive-accent);
+  color: var(--text-normal);
+}
+
+.claude-level-popover {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  padding: 4px;
+  z-index: 200;
+  min-width: 180px;
+}
+
+.claude-level-option {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.claude-level-option:hover { background: var(--background-modifier-hover); }
+.claude-level-option.active { background: var(--background-modifier-active-hover); }
+
+.claude-level-option-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.claude-level-option.active .claude-level-option-label {
+  color: var(--interactive-accent);
+}
+
+.claude-level-option-desc {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.claude-context-strip {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.claude-context-label {
+  font-size: 10px;
+  color: var(--text-faint);
+  white-space: nowrap;
+  margin-right: 2px;
+}
+
+.claude-context-chip {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--background-modifier-border);
+  border-radius: 3px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.claude-context-chip-direct { color: #e07038; background: rgba(224, 112, 56, 0.12); }
+.claude-context-chip-link1  { color: #a78bfa; background: rgba(167, 139, 250, 0.12); }
+.claude-context-chip-link2  { color: #34d399; background: rgba(52, 211, 153, 0.12); }
+
+.claude-mention-popover {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  padding: 4px;
+  z-index: 300;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.claude-mention-option {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.claude-mention-option:hover { background: var(--background-modifier-hover); }
+
+.claude-mention-option-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.claude-mention-option-path {
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.claude-context-more-btn {
+  font-size: 10px;
+  color: var(--text-faint);
+  background: var(--background-modifier-border);
+  border: none;
+  border-radius: 3px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.claude-context-more-btn:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+/* Wrapper provides the visible border + background so the textarea can be transparent */
+.claude-input-wrap {
+  flex: 1;
+  position: relative;
+  min-height: 54px;
+  max-height: 200px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.claude-input-wrap:focus-within {
+  border-color: var(--interactive-accent);
+}
+
+/* Shared typography — must pixel-match between highlight div and textarea */
+.claude-input-highlight,
+.claude-input {
+  font-size: 13px;
+  font-family: inherit;
+  line-height: 1.4;
+  padding: 6px 8px;
+  box-sizing: border-box;
+}
+
+/* Highlight layer sits behind the textarea and renders coloured @tokens */
+.claude-input-highlight {
+  position: absolute;
+  inset: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow: hidden;   /* textarea handles scrolling, this just mirrors it */
+  pointer-events: none;
+  color: var(--text-normal);
+  z-index: 1;
+}
+
+.claude-mention-resolved   { color: #e07038; }
+.claude-mention-unresolved { color: var(--text-muted); }
+
+/* Textarea is on top — text is invisible so the highlight layer shows through.
+   -webkit-text-fill-color is used instead of color:transparent so that
+   Obsidian's hover/focus overrides on `color` don't accidentally reveal the text.
+   background is forced transparent on all states for the same reason. */
+.claude-input {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 54px;
+  max-height: 200px;
+  resize: none;
+  background: transparent;
+  border: none;
+  color: var(--text-normal);
+  -webkit-text-fill-color: transparent;
+  caret-color: var(--text-normal);
+  outline: none;
+  overflow-y: auto;
+  z-index: 2;
+}
+
+.claude-input:hover,
+.claude-input:focus {
+  background: transparent;
+  -webkit-text-fill-color: transparent;
+  outline: none;
+}
+
+.claude-input-btn-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-self: flex-end;
+}
+
+.claude-send-btn {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 4px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  align-self: flex-end;
+}
+
+.claude-send-btn:hover { filter: brightness(1.1); }
+
+.claude-sages-auto-btn { background: var(--interactive-accent); color: var(--text-on-accent); }
+.claude-sages-manual-btn {
+  background: transparent;
+  color: var(--interactive-accent);
+  border: 1px solid var(--interactive-accent);
+}
+.claude-sages-manual-btn:hover { background: var(--interactive-accent-hover); color: var(--text-on-accent); }

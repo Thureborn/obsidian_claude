@@ -1,0 +1,32 @@
+.claude-message-sages {
+  background: transparent;
+  padding: 0;
+  border: none;
+}
+
+.claude-sages-run {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.claude-sages-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+  border-left: 3px solid var(--interactive-accent);
+}
+
+.claude-sages-title {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.claude-sages-status {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+}

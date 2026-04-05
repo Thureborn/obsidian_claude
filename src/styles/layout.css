@@ -1,0 +1,7 @@
+.claude-dnd-plugin {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-size: 13px;
+  overflow: hidden;
+}

@@ -5,7 +5,7 @@
   "main": "build/main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
-    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production && cp build/main.js main.js"
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production"
   },
   "dependencies": {},
   "devDependencies": {

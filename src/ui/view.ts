@@ -1,14 +1,17 @@
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
-import { VIEW_TYPE, STORAGE_KEY } from "./constants";
-import { Chat, DndMode, SageId, SagesRun } from "./types";
+import { VIEW_TYPE, STORAGE_KEY } from "../constants";
+import { Chat } from "../types/chat/Chat";
+import { DndMode } from "../types/chat/DndMode";
+import { SageId } from "../types/sages/SageId";
+import { SagesRun } from "../types/sages/SagesRun";
 import { NavPanel, renderNavbar, renderChatsPanel, renderSettingsPanel } from "./navbar";
-import { renderChatPanel } from "./chat";
-import { callClaude } from "./api";
-import { getVaultContext } from "./vault";
+import { renderChatPanel } from "./chat-panel";
+import { callClaude } from "../api/chat";
+import { buildChatContext } from "../vault/context";
 import {
   routePrompt, buildInitialRun, runWave1, runWave2, reRun,
-} from "./sages";
-import ClaudeDndPlugin from "./main";
+} from "../api/sages";
+import ClaudeDndPlugin from "../main";
 
 export class ClaudeChatView extends ItemView {
   plugin: ClaudeDndPlugin;
@@ -103,12 +106,12 @@ export class ClaudeChatView extends ItemView {
   private renderChat() {
     const chat = this.getActiveChat();
     if (!chat) return;
-    renderChatPanel(this.elChat, chat, this.loading, {
+    renderChatPanel(this.elChat, this.app, chat, this.loading, {
       onSend:            (text, auto) => this.handleSend(text, auto),
       onClear:           () => { chat.messages = []; this.saveChats(); this.renderChat(); },
       onModeChange:      (mode: DndMode) => { chat.mode = mode; this.saveChats(); this.renderChat(); },
       onRename:          (name) => { this.renameChat(chat.id, name); this.renderChat(); },
-      onVaultSizeChange: (n) => { chat.maxVaultFiles = n; this.saveChats(); },
+      onContextLevelChange: (level) => { chat.contextLevel = level; this.saveChats(); },
       onSagesContinue:   (idx, correction) => this.handleSagesContinue(idx, correction),
       onSagesReRun:      (idx, instruction, addSages) => this.handleSagesReRun(idx, instruction, addSages),
     });
@@ -134,7 +137,7 @@ export class ClaudeChatView extends ItemView {
       mode,
       messages: [],
       createdAt: Date.now(),
-      maxVaultFiles: this.plugin.settings.maxVaultFiles,
+      contextLevel: this.plugin.settings.defaultContextLevel,
     };
     this.chats.push(chat);
     this.activeChatId = chat.id;
@@ -180,7 +183,7 @@ export class ClaudeChatView extends ItemView {
     this.renderChat();
 
     try {
-      const context = await getVaultContext(this.app, this.plugin.settings, chat.maxVaultFiles);
+      const context = await buildChatContext(this.app, chat.mode, text, chat.contextLevel);
       const reply = await callClaude(chat, text, this.plugin.settings, context);
       chat.messages.push({ role: "assistant", content: reply });
     } catch (err) {
@@ -217,7 +220,7 @@ export class ClaudeChatView extends ItemView {
     this.renderChat();
 
     try {
-      const routerResult = await routePrompt(prompt, this.plugin.settings);
+      const routerResult = await routePrompt(this.app, prompt, this.plugin.settings);
 
       let run = buildInitialRun(prompt, autoMode, routerResult);
       chat.messages[runMsgIdx].sagesRun = run;
@@ -230,12 +233,12 @@ export class ClaudeChatView extends ItemView {
         this.renderChat();
       };
 
-      run = await runWave1(this.app, run, chat.maxVaultFiles, this.plugin.settings, onProgress);
+      run = await runWave1(this.app, run, chat.contextLevel, this.plugin.settings, onProgress);
       chat.messages[runMsgIdx].sagesRun = run;
       this.saveChats();
 
       if (autoMode) {
-        run = await runWave2(this.app, run, chat.maxVaultFiles, this.plugin.settings, onProgress);
+        run = await runWave2(this.app, run, chat.contextLevel, this.plugin.settings, onProgress);
         chat.messages[runMsgIdx].sagesRun = run;
         this.saveChats();
       }
@@ -265,8 +268,7 @@ export class ClaudeChatView extends ItemView {
     this.renderChat();
 
     try {
-      const vaultContext = await getVaultContext(this.app, this.plugin.settings, chat.maxVaultFiles);
-      const updated = await runWave2(this.app, run, chat.maxVaultFiles, this.plugin.settings, (r) => {
+      const updated = await runWave2(this.app, run, chat.contextLevel, this.plugin.settings, (r) => {
         msg.sagesRun = r;
         this.saveChats();
         this.renderChat();
@@ -297,8 +299,7 @@ export class ClaudeChatView extends ItemView {
     this.renderChat();
 
     try {
-      const vaultContext = await getVaultContext(this.app, this.plugin.settings, chat.maxVaultFiles);
-      const newRun = await reRun(this.app, msg.sagesRun, instruction, addSages, chat.maxVaultFiles, this.plugin.settings, (r) => {
+      const newRun = await reRun(this.app, msg.sagesRun, instruction, addSages, chat.contextLevel, this.plugin.settings, (r) => {
         msg.sagesRun = r;
         this.saveChats();
         this.renderChat();

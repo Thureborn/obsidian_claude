@@ -1,74 +1,15 @@
-import { App, requestUrl } from "obsidian";
-import {
-  SageId, SageResult, SagesRun, SagesWave, ClaudePluginSettings,
-} from "./types";
+import { App } from "obsidian";
+import { SageId } from "../types/sages/SageId";
+import { SageResult } from "../types/sages/SageResult";
+import { SagesRun } from "../types/sages/SagesRun";
+import { SagesWave } from "../types/sages/SagesWave";
+import type { ContextLevel } from "../types/chat/ContextLevel";
+import { ClaudePluginSettings } from "../types/settings/ClaudePluginSettings";
 import {
   WAVE1_SAGES, WAVE2_SAGES, SAGE_COUNCIL_PROMPTS, SAGE_LABELS,
-} from "./constants";
-import { getSageContext } from "./vault";
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const MAX_RETRIES = 5;
-const BASE_RETRY_DELAY_MS = 60_000;
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function claudeCall(
-  systemPrompt: string,
-  userContent: string,
-  settings: ClaudePluginSettings,
-  maxTokens = 4096,
-  onRetry?: (attempt: number, waitSecs: number) => void
-): Promise<string> {
-  let attempt = 0;
-
-  while (true) {
-    const res = await requestUrl({
-      url: "https://api.anthropic.com/v1/messages",
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": settings.apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: settings.model,
-        max_tokens: maxTokens,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userContent }],
-      }),
-      throw: false,
-    });
-
-    if (res.status === 200) {
-      return res.json?.content?.[0]?.text ?? "(no response)";
-    }
-
-    if (res.status === 429) {
-      if (attempt >= MAX_RETRIES) {
-        throw new Error(`Rate limited after ${MAX_RETRIES} retries. Try again in a minute.`);
-      }
-
-      const retryAfter = res.headers?.["retry-after"];
-      const waitMs = retryAfter
-        ? parseInt(retryAfter, 10) * 1000
-        : BASE_RETRY_DELAY_MS;
-
-      onRetry?.(attempt + 1, Math.round(waitMs / 1000));
-      await sleep(waitMs);
-      attempt++;
-      continue;
-    }
-
-    const err = res.json;
-    throw new Error(err?.error?.message ?? `API error ${res.status}`);
-  }
-}
+} from "../constants";
+import { buildSageContext, buildRouterContext } from "../vault/context";
+import { claudeRequest } from "./client";
 
 // ─── Router ───────────────────────────────────────────────────────────────────
 
@@ -100,11 +41,16 @@ interface RouterResult {
 }
 
 export async function routePrompt(
+  app: App,
   prompt: string,
   settings: ClaudePluginSettings
 ): Promise<RouterResult> {
   try {
-    const raw = await claudeCall(ROUTER_SYSTEM, `User prompt:\n${prompt}`, settings);
+    const context = await buildRouterContext(app, prompt);
+    const userContent = context
+      ? `${context}\n\nUser prompt:\n${prompt}`
+      : `User prompt:\n${prompt}`;
+    const raw = await claudeRequest(ROUTER_SYSTEM, [{ role: "user", content: userContent }], settings);
     const clean = raw.replace(/```json|```/g, "").trim();
     return JSON.parse(clean) as RouterResult;
   } catch {
@@ -118,18 +64,20 @@ export async function routePrompt(
 
 // ─── Run a single sage ────────────────────────────────────────────────────────
 
+const MAX_RETRIES = 5;
+
 async function runSage(
   app: App,
   sage: SageResult,
   prompt: string,
-  maxVaultFiles: number,
+  contextLevel: ContextLevel,
   wave1Context: string,
   userCorrection: string | null,
   settings: ClaudePluginSettings,
   onProgress: (sage: SageResult) => void
 ): Promise<void> {
   const isWave2 = WAVE2_SAGES.includes(sage.sageId);
-  const sageContext = await getSageContext(app, sage.sageId, maxVaultFiles);
+  const sageContext = await buildSageContext(app, sage.sageId, prompt, contextLevel);
 
   const parts: string[] = [];
   if (sageContext) parts.push(`=== VAULT CONTEXT ===\n${sageContext}`);
@@ -138,15 +86,16 @@ async function runSage(
   parts.push(`=== USER PROMPT ===\n${prompt}`);
 
   try {
-    sage.output = await claudeCall(
+    sage.output = await claudeRequest(
       SAGE_COUNCIL_PROMPTS[sage.sageId],
-      parts.join("\n\n"),
+      [{ role: "user", content: parts.join("\n\n") }],
       settings,
-      4096,
-      (attempt, waitSecs) => {
-        sage.status = "retrying";
-        sage.output = `Rate limited. Retrying in ${waitSecs}s (attempt ${attempt}/${MAX_RETRIES})...`;
-        onProgress(sage);
+      {
+        onRetry: (attempt, waitSecs) => {
+          sage.status = "retrying";
+          sage.output = `Rate limited. Retrying in ${waitSecs}s (attempt ${attempt}/${MAX_RETRIES})...`;
+          onProgress(sage);
+        },
       }
     );
     sage.status = "done";
@@ -198,7 +147,7 @@ export async function synthesise(
 
   if (userCorrection) parts.push(`## Final User Instructions\n${userCorrection}`);
 
-  return claudeCall(SYNTHESIS_SYSTEM, parts.join("\n\n"), settings, 8192);
+  return claudeRequest(SYNTHESIS_SYSTEM, [{ role: "user", content: parts.join("\n\n") }], settings, { maxTokens: 8192 });
 }
 
 // ─── Build initial run ────────────────────────────────────────────────────────
@@ -236,7 +185,7 @@ export function buildInitialRun(
 export async function runWave1(
   app: App,
   run: SagesRun,
-  maxVaultFiles: number,
+  contextLevel: ContextLevel,
   settings: ClaudePluginSettings,
   onProgress: (run: SagesRun) => void
 ): Promise<SagesRun> {
@@ -248,7 +197,7 @@ export async function runWave1(
     pending.map((sage) => {
       sage.status = "running";
       onProgress({ ...run });
-      return runSage(app, sage, run.prompt, maxVaultFiles, "", null, settings, () => {
+      return runSage(app, sage, run.prompt, contextLevel, "", null, settings, () => {
         onProgress({ ...run });
       });
     })
@@ -263,7 +212,7 @@ export async function runWave1(
 export async function runWave2(
   app: App,
   run: SagesRun,
-  maxVaultFiles: number,
+  contextLevel: ContextLevel,
   settings: ClaudePluginSettings,
   onProgress: (run: SagesRun) => void
 ): Promise<SagesRun> {
@@ -278,7 +227,7 @@ export async function runWave2(
     pending.map((sage) => {
       sage.status = "running";
       onProgress({ ...run });
-      return runSage(app, sage, run.prompt, maxVaultFiles, wave1Context, correction, settings, () => {
+      return runSage(app, sage, run.prompt, contextLevel, wave1Context, correction, settings, () => {
         onProgress({ ...run });
       });
     })
@@ -300,7 +249,7 @@ export async function reRun(
   previousRun: SagesRun,
   instruction: string,
   addSages: SageId[],
-  maxVaultFiles: number,
+  contextLevel: ContextLevel,
   settings: ClaudePluginSettings,
   onProgress: (run: SagesRun) => void
 ): Promise<SagesRun> {
@@ -331,7 +280,7 @@ export async function reRun(
       wave1Pending.map((sage) => {
         sage.status = "running";
         onProgress({ ...newRun });
-        return runSage(app, sage, newRun.prompt, maxVaultFiles, "", instruction, settings, () => {
+        return runSage(app, sage, newRun.prompt, contextLevel, "", instruction, settings, () => {
           onProgress({ ...newRun });
         });
       })
@@ -349,7 +298,7 @@ export async function reRun(
       wave2Pending.map((sage) => {
         sage.status = "running";
         onProgress({ ...newRun });
-        return runSage(app, sage, newRun.prompt, maxVaultFiles, updatedWave1Context, instruction, settings, () => {
+        return runSage(app, sage, newRun.prompt, contextLevel, updatedWave1Context, instruction, settings, () => {
           onProgress({ ...newRun });
         });
       })

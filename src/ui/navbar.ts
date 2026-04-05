@@ -1,4 +1,5 @@
-import { Chat } from "./types";
+import { setIcon } from "obsidian";
+import { Chat } from "../types/chat/Chat";
 
 export type NavPanel = "none" | "chats" | "settings";
 
@@ -32,9 +33,10 @@ export function renderNavbar(
     cb.onPanelChange(activePanel === "chats" ? "none" : "chats");
 
   const settingsBtn = container.createEl("button", {
-    text: "Settings",
-    cls: "claude-nav-btn" + (activePanel === "settings" ? " active" : ""),
+    cls: "claude-nav-btn claude-nav-settings-btn" + (activePanel === "settings" ? " active" : ""),
+    attr: { title: "Settings" },
   });
+  setIcon(settingsBtn, "settings");
   settingsBtn.onclick = () =>
     cb.onPanelChange(activePanel === "settings" ? "none" : "settings");
 }
@@ -146,7 +148,7 @@ export function renderChatsPanel(
 
 export function renderSettingsPanel(
   container: HTMLElement,
-  plugin: import("./main").default
+  plugin: import("../main").default
 ): void {
   container.empty();
   container.addClass("claude-panel");
@@ -185,38 +187,60 @@ export function renderSettingsPanel(
     await plugin.saveSettings();
   };
 
-  // Default max vault files
-  const vaultRow = wrap.createDiv("claude-settings-row");
-  vaultRow.createEl("label", { text: "Default Context Files", cls: "claude-settings-label" });
-  const vaultSliderWrap = vaultRow.createDiv("claude-settings-slider-wrap");
-  const vaultSlider = vaultSliderWrap.createEl("input", {
-    attr: { type: "range", min: "1", max: "50", value: String(plugin.settings.maxVaultFiles) },
-    cls: "claude-settings-slider",
-  });
-  const vaultVal = vaultSliderWrap.createEl("span", {
-    text: String(plugin.settings.maxVaultFiles),
+  // Default context level
+  const LEVELS = ["off", "low", "mid", "high"] as const;
+  const STEPS = LEVELS.length - 1;
+  const levelRow = wrap.createDiv("claude-settings-row");
+  levelRow.createEl("label", { text: "Default Context Level", cls: "claude-settings-label" });
+  const sliderWrap = levelRow.createDiv("claude-settings-slider-wrap");
+  const track = sliderWrap.createDiv("claude-level-slider-track");
+  const fill = track.createDiv("claude-level-slider-fill");
+  const dotsEl = track.createDiv("claude-level-slider-dots");
+  for (let i = 0; i <= STEPS; i++) {
+    dotsEl.createEl("span", { cls: "claude-level-slider-dot", attr: { style: `left: ${(i / STEPS) * 100}%` } });
+  }
+  const thumb = track.createDiv("claude-level-slider-thumb");
+  const sliderVal = sliderWrap.createEl("span", {
     cls: "claude-settings-slider-val",
-  });
-  vaultSlider.oninput = async () => {
-    plugin.settings.maxVaultFiles = Number(vaultSlider.value);
-    vaultVal.setText(vaultSlider.value);
-    await plugin.saveSettings();
-  };
-  wrap.createEl("p", {
-    text: "This sets the context file count for new chats. Each chat can be adjusted individually in its header.",
-    cls: "claude-settings-hint",
+    text: plugin.settings.defaultContextLevel[0].toUpperCase() + plugin.settings.defaultContextLevel.slice(1),
   });
 
-  // Include active file
-  const activeRow = wrap.createDiv("claude-settings-row");
-  activeRow.createEl("label", { text: "Include Active File", cls: "claude-settings-label" });
-  const activeToggle = activeRow.createEl("input", {
-    attr: { type: "checkbox" },
-    cls: "claude-settings-toggle",
-  });
-  activeToggle.checked = plugin.settings.includeActiveFile;
-  activeToggle.onchange = async () => {
-    plugin.settings.includeActiveFile = activeToggle.checked;
+  let curStep = LEVELS.indexOf(plugin.settings.defaultContextLevel);
+  const THUMB_R = 10; // half of 20px thumb
+  const update = () => {
+    const pct = (curStep / STEPS) * 100;
+    const offset = THUMB_R - pct * THUMB_R * 2 / 100;
+    thumb.style.left = `calc(${pct}% + ${offset}px)`;
+    fill.style.width = `calc(${pct}% + ${offset + THUMB_R}px)`;
+    sliderVal.setText(LEVELS[curStep][0].toUpperCase() + LEVELS[curStep].slice(1));
+  };
+  update();
+
+  const setStep = async (step: number) => {
+    curStep = Math.max(0, Math.min(STEPS, step));
+    update();
+    plugin.settings.defaultContextLevel = LEVELS[curStep];
     await plugin.saveSettings();
   };
+
+  track.onclick = (e) => {
+    const rect = track.getBoundingClientRect();
+    setStep(Math.round(((e.clientX - rect.left) / rect.width) * STEPS));
+  };
+  thumb.onmousedown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const onMove = (ev: MouseEvent) => {
+      const rect = track.getBoundingClientRect();
+      const x = Math.max(0, Math.min(rect.width, ev.clientX - rect.left));
+      setStep(Math.round((x / rect.width) * STEPS));
+    };
+    const onUp = () => { document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  };
+  wrap.createEl("p", {
+    text: "Off = no context. Low = open tabs + @mentions. Mid = Low + linked files (max 30). High = Mid + 2nd-level links (max 50).",
+    cls: "claude-settings-hint",
+  });
 }

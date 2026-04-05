@@ -1,4 +1,7 @@
-import { ClaudePluginSettings, DndMode, SageId } from "./types";
+import { ClaudePluginSettings } from "./types/settings/ClaudePluginSettings";
+import { DndMode } from "./types/chat/DndMode";
+import { ContextLevel } from "./types/chat/ContextLevel";
+import { SageId } from "./types/sages/SageId";
 
 export const VIEW_TYPE = "claude-dnd-chat";
 export const STORAGE_KEY = "claude-dnd-chats";
@@ -6,8 +9,21 @@ export const STORAGE_KEY = "claude-dnd-chats";
 export const DEFAULT_SETTINGS: ClaudePluginSettings = {
   apiKey: "",
   model: "claude-sonnet-4-20250514",
-  maxVaultFiles: 20,
-  includeActiveFile: true,
+  defaultContextLevel: "low",
+};
+
+export const CONTEXT_LEVEL_LINK_DEPTH: Record<ContextLevel, number> = {
+  off: 0,
+  low: 0,
+  mid: 1,
+  high: 2,
+};
+
+export const CONTEXT_LEVEL_MAX_FILES: Record<ContextLevel, number> = {
+  off: 0,
+  low: 0,
+  mid: 30,
+  high: 50,
 };
 
 export const MODELS: Record<string, string> = {
